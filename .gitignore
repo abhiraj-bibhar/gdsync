@@ -1,0 +1,59 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+.eggs/
+dist/
+build/
+pip-wheel-metadata/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# =========================
+# Packaging / tooling
+# =========================
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# =========================
+# OS / Editor junk
+# =========================
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# =========================
+# gdsync (VERY IMPORTANT)
+# =========================
+
+# Project-level gdsync metadata
+.gdsync/
+.gdsyncignore
+
+# Global auth (never commit credentials)
+credentials.json
+token.json
+
+# Safety: never commit downloaded Drive data
+Drive/
+
+# =========================
+# Logs / temp
+# =========================
+*.log
+*.tmp
+*.bak

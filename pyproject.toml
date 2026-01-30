@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gdsync"
+version = "0.0.0"
+description = "Google Drive sync CLI"
+requires-python = ">=3.9"
+
+[project.scripts]
+gdsync = "gdsync.cli:main"
