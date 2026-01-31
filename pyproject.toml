@@ -1,12 +1,72 @@
 [build-system]
-requires = ["setuptools>=64"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
 
 [project]
 name = "gdsync"
-version = "0.0.0"
-description = "Google Drive sync CLI"
+version = "v0.1.0"
+description = "Safe, Git-like two-way Google Drive sync with conflict handling"
+readme = "README.md"
+license = { file = "LICENSE" }
 requires-python = ">=3.9"
+
+authors = [
+  { name = "Abhiraj Bibhar", email = "buddhosmi@gmail.com" }
+]
+
+keywords = [
+  "google-drive",
+  "sync",
+  "backup",
+  "cli",
+  "oauth",
+  "productivity",
+]
+
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Utilities",
+  "Topic :: Internet",
+]
+
+dependencies = [
+  "google-api-python-client>=2.90.0",
+  "google-auth>=2.20.0",
+  "google-auth-oauthlib>=1.0.0",
+  "google-auth-httplib2>=0.2.0",
+  "requests>=2.28.0",
+]
+
+
+[project.urls]
+Homepage = "https://github.com/abhiraj-bibhar/gdsync"
+Repository = "https://github.com/abhiraj-bibhar/gdsync"
+Issues = "https://github.com/abhiraj-bibhar/gdsync/issues"
+Documentation = "https://github.com/abhiraj-bibhar/gdsync#README"
+
 
 [project.scripts]
 gdsync = "gdsync.cli:main"
+
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+exclude = ["tests*", "scripts*"]
+
+
+[tool.setuptools.package-data]
+gdsync = ["py.typed"]

@@ -5,7 +5,12 @@ from gdsync.config.project import is_initialized, load_config
 from gdsync.config.global_cfg import OAUTH_FILE
 from gdsync.core.auth import authenticate
 from gdsync.core.planner import plan_sync
-from gdsync.core.executor import download_files
+from gdsync.core.executor import (
+    download_files,
+    upload_files,
+    resolve_conflicts,
+    report_conflicts,
+)
 
 
 # -------------------------------------------------
@@ -19,8 +24,6 @@ def _fmt_time(ts: float) -> str:
 def _choose_drive_dir(service) -> str | None:
     """
     Interactive Drive directory navigator.
-    Allows user to decide whether to download a directory
-    or go deeper into it.
     """
     from gdsync.core.drive import (
         list_drive_directories,
@@ -33,10 +36,11 @@ def _choose_drive_dir(service) -> str | None:
     while True:
         current_id = id_stack[-1]
 
-        if current_id == "root":
-            dirs = list_drive_directories(service)
-        else:
-            dirs = list_drive_subdirectories(service, current_id)
+        dirs = (
+            list_drive_directories(service)
+            if current_id == "root"
+            else list_drive_subdirectories(service, current_id)
+        )
 
         current_path = "/" + "/".join(path_parts) if path_parts else "/"
         print(f"\nCurrent directory: {current_path}\n")
@@ -50,8 +54,7 @@ def _choose_drive_dir(service) -> str | None:
             print(f"  {i}) {d['name']}/")
 
         try:
-            choice = int(input("\nSelect a directory: ").strip())
-            selected = dirs[choice - 1]
+            selected = dirs[int(input("\nSelect a directory: ").strip()) - 1]
         except Exception:
             print("Invalid selection")
             continue
@@ -105,20 +108,27 @@ def cmd_run(args):
     print("✅ Authentication OK")
 
     # -----------------------------
-    # Determine download scope
+    # Conflict strategy
+    # -----------------------------
+    strategy = getattr(args, "conflict_strategy", "ask")
+
+    # -----------------------------
+    # Download scope
     # -----------------------------
     config = load_config()
-    download_dir: str | None = args.download_dir
+    download_dir: str | None = getattr(args, "download_dir", None)
 
-    if config.get("sync_scope") == "full_drive" and not download_dir:
+    if (
+        config.get("sync_scope") == "full_drive"
+        and not download_dir
+        and not args.yes
+    ):
         print("\nThis project is configured for full Google Drive sync.\n")
         print("What would you like to download?")
         print("  1) Entire Google Drive")
         print("  2) Choose a specific directory")
 
-        choice = input("\n> ").strip()
-
-        if choice == "2":
+        if input("\n> ").strip() == "2":
             download_dir = _choose_drive_dir(service)
             if not download_dir:
                 print("Aborted.")
@@ -139,10 +149,18 @@ def cmd_run(args):
         print("Downloads:")
         for f in plan["downloads"]:
             print(
-                f" ↓ {f['path']} | "
-                f"{f['size']} bytes | "
-                f"{_fmt_time(f['mtime'])}"
+                f" ↓ {f['path']} | {f['size']} bytes | {_fmt_time(f['mtime'])}"
             )
+
+    if plan["uploads"]:
+        print("\nUploads:")
+        for f in plan["uploads"]:
+            print(
+                f" ↑ {f['path']} | {f['size']} bytes | {_fmt_time(f['mtime'])}"
+            )
+
+    if plan["conflicts"]:
+        report_conflicts(plan["conflicts"])
 
     print("\nSummary:")
     print(f"Uploads:   {len(plan['uploads'])}")
@@ -151,28 +169,38 @@ def cmd_run(args):
     print(f"Conflicts: {len(plan['conflicts'])}")
 
     # -----------------------------
-    # Dry-run exit
+    # Dry-run
     # -----------------------------
     if args.dry_run:
         print("\n(no changes were made)")
         return 0
 
     # -----------------------------
-    # Execute downloads
+    # Downloads (safe)
     # -----------------------------
     if plan["downloads"]:
-        confirm = input("\nProceed with downloads? (y/N): ").lower()
-        if confirm != "y":
-            print("Aborted.")
-            return 0
+        if args.yes or input("\nProceed with downloads? (y/N): ").lower() == "y":
+            download_files(service, plan["downloads"], Path.cwd())
 
-        download_files(
+    # -----------------------------
+    # Conflicts (ONLY if exist)
+    # -----------------------------
+    if plan["conflicts"]:
+        resolve_conflicts(
             service,
-            plan["downloads"],
-            Path.cwd(),
-            dry_run=False,
+            plan["conflicts"],
+            strategy=strategy,
+            project_root=Path.cwd(),
+            yes=args.yes,
+            dry_run=args.dry_run,
         )
 
-        print("\n✅ Download completed")
+    # -----------------------------
+    # Uploads (safe)
+    # -----------------------------
+    if plan["uploads"]:
+        if args.yes or input("\nProceed with uploads? (y/N): ").lower() == "y":
+            upload_files(service, plan["uploads"], Path.cwd())
 
+    print("\n✅ Sync completed")
     return 0

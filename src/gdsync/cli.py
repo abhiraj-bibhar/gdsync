@@ -33,11 +33,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_init.set_defaults(func=cmd_init)
 
     # -----------------
-    # gdsync run
+    # gdsync run (MAIN ENTRY)
     # -----------------
     p_run = subparsers.add_parser(
         "run",
-        help="Run sync",
+        help="Run sync (downloads, uploads, conflict resolution)",
     )
     p_run.add_argument(
         "-y", "--yes",
@@ -53,7 +53,13 @@ def build_parser() -> argparse.ArgumentParser:
         "--download-dir",
         metavar="PATH",
         help="Download only this Drive directory (full-drive mode)",
-    )    
+    )
+    p_run.add_argument(
+        "--conflict-strategy",
+        choices=["ask", "prefer-drive", "prefer-local"],
+        default="ask",
+        help="How to resolve conflicts (default: ask)",
+    )
     p_run.set_defaults(func=cmd_run)
 
     # -----------------

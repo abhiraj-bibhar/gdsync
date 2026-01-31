@@ -149,7 +149,8 @@ def list_drive_directories(service):
         if not page_token:
             break
 
-    return dirs    
+    return dirs 
+       
 def list_drive_subdirectories(service, parent_id: str):
     """
     List subdirectories of a given Google Drive folder.
@@ -175,3 +176,29 @@ def list_drive_subdirectories(service, parent_id: str):
             break
 
     return dirs
+    
+def ensure_drive_folder(service, name: str, parent_id: str) -> str:
+    """
+    Ensure a folder exists in Drive, return its ID.
+    """
+    resp = service.files().list(
+        q=(
+            "mimeType='application/vnd.google-apps.folder' "
+            f"and name='{name}' "
+            f"and '{parent_id}' in parents "
+            "and trashed=false"
+        ),
+        fields="files(id)",
+    ).execute()
+
+    files = resp.get("files", [])
+    if files:
+        return files[0]["id"]
+
+    meta = {
+        "name": name,
+        "mimeType": "application/vnd.google-apps.folder",
+        "parents": [parent_id],
+    }
+    folder = service.files().create(body=meta, fields="id").execute()
+    return folder["id"]    
